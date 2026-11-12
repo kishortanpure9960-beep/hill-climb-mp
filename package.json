@@ -10,7 +10,8 @@
     "dev": "node --watch server/index.js",
     "test:physics": "node tools/physics-test.js",
     "test:net": "node tools/net-test.js",
-    "test:browser": "node tools/browser-test.js"
+    "test:browser": "node tools/browser-test.js",
+    "build:static": "node tools/build-static.js"
   },
   "engines": {
     "node": ">=18"

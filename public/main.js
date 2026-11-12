@@ -71,10 +71,21 @@ const state = {
 /* ------------------------------------------------------------------ net */
 
 function connect(name, roomCode) {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  let url;
+  const custom = (window.HC_SERVER || '').trim();
+  if (custom) {
+    url = custom.replace(/\/+$/, '');
+    if (!/^wss?:\/\//i.test(url)) {
+      url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + url;
+    }
+  } else {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    url = `${proto}://${location.host}`;
+  }
+
   let ws;
   try {
-    ws = new WebSocket(`${proto}://${location.host}`);
+    ws = new WebSocket(url);
   } catch {
     ui.menuError.textContent = 'Could not open a connection to the server.';
     return;
