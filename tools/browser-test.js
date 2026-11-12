@@ -111,15 +111,33 @@ try {
     document.getElementById('playBtn').click();
     true
   `);
-  await sleep(1500);
-
-  const lobby = await evaluate(`({
-    lobbyVisible: !document.getElementById('lobby').classList.contains('hidden'),
-    code: document.getElementById('roomCode').textContent,
-    players: document.querySelectorAll('#playerList li:not(.empty)').length,
-    startEnabled: !document.getElementById('startBtn').disabled,
-    menuError: document.getElementById('menuError').textContent
-  })`);
+  // the WebSocket handshake can take a moment when going through a tunnel
+  let lobby = null;
+  for (let i = 0; i < 20; i++) {
+    await sleep(500);
+    lobby = await evaluate(`({
+      lobbyVisible: !document.getElementById('lobby').classList.contains('hidden'),
+      code: document.getElementById('roomCode').textContent,
+      players: document.querySelectorAll('#playerList li:not(.empty)').length,
+      startEnabled: !document.getElementById('startBtn').disabled,
+      menuError: document.getElementById('menuError').textContent
+    })`);
+    if (lobby.lobbyVisible) break;
+  }
+  if (!lobby.lobbyVisible) {
+    const diag = await evaluate(`(() => {
+      const s = window.__hc && window.__hc.state;
+      const ws = s && s.ws;
+      return {
+        phase: s && s.phase,
+        readyState: ws ? ws.readyState : null,
+        url: ws ? ws.url : null,
+        config: window.HC_SERVER,
+        online: navigator.onLine
+      };
+    })()`);
+    console.log('lobby diag:', diag);
+  }
   console.log('lobby:', lobby);
   await shot('02-lobby.png');
 
@@ -156,16 +174,50 @@ try {
     const g = c.getContext('2d');
     const px = (x, y) => Array.from(g.getImageData(Math.round(x), Math.round(y), 1, 1).data);
     const all = g.getImageData(0, 0, c.width, c.height).data;
-    let gold = 0;
-    for (let i = 0; i < all.length; i += 16) {
-      if (all[i] > 185 && all[i + 1] > 145 && all[i + 2] < 120) gold++;
+    const dpr = c.width / innerWidth;
+
+    // where the character head should be on screen, straight from the game state
+    const hc = window.__hc;
+    const car = hc && hc.state.self && hc.state.self.car;
+    let head = null;
+    if (car) {
+      const a = car.a ?? car.angle ?? 0;
+      const ox = hc.headOffset.x;
+      const oy = hc.headOffset.y;
+      const hx = car.x + ox * Math.cos(a) - oy * Math.sin(a);
+      const hy = car.y + ox * Math.sin(a) + oy * Math.cos(a);
+      const [sx, sy] = hc.w2s(hx, hy);
+      head = { x: Math.round(sx * dpr), y: Math.round(sy * dpr) };
     }
+
+    let headGold = 0;
+    let headDark = 0;
+    let headPixels = 0;
+    if (head) {
+      const r = Math.round(14 * dpr);
+      for (let y = head.y - r; y <= head.y + r; y++) {
+        for (let x = head.x - r; x <= head.x + r; x++) {
+          if (x < 0 || y < 0 || x >= c.width || y >= c.height) continue;
+          const i = (y * c.width + x) * 4;
+          headPixels++;
+          const R = all[i];
+          const G = all[i + 1];
+          const B = all[i + 2];
+          if (R > 175 && G > 135 && B < 130) headGold++;
+          if (R + G + B < 330) headDark++;
+        }
+      }
+    }
+
     const mascot = document.querySelector('.mascot');
     return {
       sky: px(c.width * 0.15, c.height * 0.06),
       ground: px(c.width * 0.5, c.height * 0.9),
       car: px(c.width * 0.5, c.height * 0.62),
-      gold,
+      head,
+      headGold,
+      headDark,
+      headPixels,
       mascotLoaded: !!(mascot && mascot.complete && mascot.naturalWidth > 0)
     };
   })()`);
@@ -173,8 +225,8 @@ try {
   const [gr, gg, gb] = pixels.ground;
   const skyOk = sb > sr && sb > 100;
   const groundOk = gr > gb && gr > 40;
-  const characterOk = pixels.mascotLoaded && pixels.gold > 20;
-  console.log('pixels:', { skyOk, groundOk, characterOk, gold: pixels.gold, mascotLoaded: pixels.mascotLoaded, sky: pixels.sky, ground: pixels.ground });
+  const characterOk = pixels.mascotLoaded && pixels.headGold > 20 && pixels.headDark > 30;
+  console.log('pixels:', { skyOk, groundOk, characterOk, head: pixels.head, headGold: pixels.headGold, headDark: pixels.headDark, mascotLoaded: pixels.mascotLoaded, sky: pixels.sky, ground: pixels.ground });
 
   await send('Input.dispatchKeyEvent', {
     type: 'keyUp',

@@ -233,18 +233,23 @@ function toast(text) {
   toast._timer = setTimeout(() => ui.toast.classList.add('hidden'), 2600);
 }
 
+function avatarFor(color) {
+  const img = document.createElement('img');
+  img.className = 'avatar';
+  img.src = '/assets/character_face.png';
+  img.alt = '';
+  img.style.color = color;
+  return img;
+}
+
 function renderLobby() {
   ui.roomCode.textContent = state.room || '----';
   ui.playerList.innerHTML = '';
   for (const p of state.players) {
     const li = document.createElement('li');
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = p.color;
-    dot.style.color = p.color;
     const name = document.createElement('span');
     name.textContent = p.name + (p.id === state.you ? ' (you)' : '');
-    li.append(dot, name);
+    li.append(avatarFor(p.color), name);
     if (p.host) {
       const host = document.createElement('span');
       host.className = 'host';
@@ -280,17 +285,13 @@ function showResults(results) {
     const place = document.createElement('span');
     place.className = 'place';
     place.textContent = medals[r.place - 1] || String(r.place);
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = r.color;
-    dot.style.color = r.color;
     const name = document.createElement('span');
     name.className = 'nm';
     name.textContent = r.name + (r.id === state.you ? ' (you)' : '');
     const time = document.createElement('span');
     time.className = 'time';
     time.textContent = r.time != null ? `${r.time.toFixed(2)}s` : `${Math.round(r.distance)} m`;
-    li.append(place, dot, name, time);
+    li.append(place, avatarFor(r.color), name, time);
     ui.resultList.append(li);
   });
 
@@ -664,17 +665,13 @@ function updateHud() {
   order.forEach((o, i) => {
     const row = document.createElement('div');
     row.className = 'rank-row' + (o.entry.id === state.selfId ? ' me' : '');
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = o.entry.color;
-    dot.style.color = o.entry.color;
     const nm = document.createElement('span');
     nm.className = 'nm';
     nm.textContent = o.entry.name;
     const pos = document.createElement('span');
     pos.className = 'pos';
     pos.textContent = `${i + 1}. ${Math.round(Math.max(0, o.x - (state.track?.startX || 8)))}m`;
-    row.append(dot, nm, pos);
+    row.append(avatarFor(o.entry.color), nm, pos);
     ui.rank.append(row);
   });
 }
@@ -853,20 +850,20 @@ function drawCrowd(track) {
     if (x > right) break;
     if (x < left) continue;
 
-    const h = 1.4 + rand01(i * 7 + 11) * 0.8;
+    const h = 1 + rand01(i * 7 + 11) * 0.6;
     const w = h * (charStandee.width / charStandee.height);
     const y = track.heightAt(x);
 
     ctx.save();
     ctx.translate(x, y);
-    ctx.globalAlpha = 0.9;
+    ctx.globalAlpha = 0.82;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
     ctx.beginPath();
-    ctx.ellipse(0, 0.03, w * 0.42, 0.1, 0, 0, TAU);
+    ctx.ellipse(0, 0.03, w * 0.42, 0.09, 0, 0, TAU);
     ctx.fill();
 
-    ctx.drawImage(charStandee, -w / 2, -h, w, h);
+    ctx.drawImage(charStandee, -w / 2, -h - 0.08, w, h);
     ctx.restore();
   }
 }
@@ -1004,22 +1001,18 @@ function drawCar(entry, c) {
   ctx.fill();
 
   // driver — the uploaded character rides along in every car
-  const headX = -0.3;
-  const headY = -0.58;
-  const headR = 0.25;
+  const headX = -0.34;
+  const headY = -0.8;
+  const headR = 0.43;
 
+  // shoulders poking out of the cockpit
   ctx.beginPath();
-  ctx.arc(headX, -0.34, 0.2, Math.PI, TAU);
+  ctx.ellipse(headX + 0.02, -0.3, 0.26, 0.24, 0, 0, TAU);
   ctx.fillStyle = shade(entry.color, 0.78);
   ctx.fill();
 
   if (imgReady(charFace)) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(headX, headY, headR, 0, TAU);
-    ctx.clip();
     ctx.drawImage(charFace, headX - headR, headY - headR, headR * 2, headR * 2);
-    ctx.restore();
   } else {
     ctx.beginPath();
     ctx.arc(headX, headY, 0.17, 0, TAU);
@@ -1157,3 +1150,6 @@ function renderMenuBackdrop(now) {
 }
 
 requestAnimationFrame(frame);
+
+// Small hook so tools/browser-test.js can check what is drawn where.
+window.__hc = { state, w2s, headOffset: { x: -0.34, y: -0.8 } };
