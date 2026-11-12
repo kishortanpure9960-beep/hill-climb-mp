@@ -1,0 +1,21 @@
+{
+  "name": "hill-climb-mp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hill Climb multiplayer racing for 2-4 players over the network",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test:physics": "node tools/physics-test.js",
+    "test:net": "node tools/net-test.js",
+    "test:browser": "node tools/browser-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
