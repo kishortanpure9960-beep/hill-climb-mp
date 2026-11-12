@@ -1,4 +1,4 @@
-// Headless-browser smoke test: loads the real UI, creates a room, starts a
+﻿// Headless-browser smoke test: loads the real UI, creates a room, starts a
 // solo race, holds the gas key and checks that the car actually moves.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
@@ -7,8 +7,8 @@ import path from 'node:path';
 import WebSocket from 'ws';
 
 const CHROME = process.env.CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const PORT = 9333;
-const URL = process.env.URL || 'http://localhost:3000';
+const PORT = Number(process.env.CDP_PORT || 9333);
+const BASE_URL = process.env.URL || 'http://localhost:3000';
 const profile = path.join(os.tmpdir(), 'opencode', 'hc-chrome-' + Date.now());
 const shots = path.join(process.cwd(), 'shots');
 
@@ -25,7 +25,7 @@ const chrome = spawn(
     '--window-size=1280,800',
     `--remote-debugging-port=${PORT}`,
     `--user-data-dir=${profile}`,
-    URL,
+    BASE_URL,
   ],
   { stdio: 'ignore' }
 );
@@ -69,8 +69,9 @@ try {
   let target = null;
   for (let i = 0; i < 60; i++) {
     try {
-      const list = await (await fetch(`http://localhost:${PORT}/json/list`)).json();
-      target = list.find((t) => t.type === 'page' && t.url.includes('localhost:3000'));
+      const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
+      const host = new URL(BASE_URL).host;
+      target = list.find((t) => t.type === 'page' && t.url.includes(host));
       if (target) break;
     } catch {}
     await sleep(250);
@@ -199,3 +200,4 @@ try {
   await sleep(300);
   await fs.rm(profile, { recursive: true, force: true }).catch(() => {});
 }
+
