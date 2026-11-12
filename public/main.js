@@ -7,6 +7,15 @@ const ctx = canvas.getContext('2d');
 const TAU = Math.PI * 2;
 const FIXED_DT = 1 / 60;
 
+// Uploaded character artwork: the circular head rides along as the driver and
+// the full-body standee lines the track as roadside spectators.
+const charFace = new Image();
+charFace.src = '/assets/character_face.png';
+const charStandee = new Image();
+charStandee.src = '/assets/character_standee.png';
+
+const imgReady = (img) => img.complete && img.naturalWidth > 0;
+
 const ui = {
   menu: $('menu'),
   lobby: $('lobby'),
@@ -692,6 +701,7 @@ function render() {
   ctx.translate(-state.cam.x, -state.cam.y);
 
   drawTerrain(track);
+  drawCrowd(track);
   drawMarkers(track);
   drawFinish(track);
 
@@ -829,6 +839,44 @@ function drawTerrain(track) {
   ctx.stroke();
 }
 
+function drawCrowd(track) {
+  if (!imgReady(charStandee)) return;
+  const scale = state.cam.scale;
+  const left = state.cam.x - innerWidth / 2 / scale - 4;
+  const right = state.cam.x + innerWidth / 2 / scale + 4;
+  const startX = (track.startX || 8) + 18;
+  const step = 24;
+
+  const first = Math.max(0, Math.floor((left - startX) / step) - 1);
+  for (let i = first; ; i++) {
+    const x = startX + i * step + rand01(i * 13 + 3) * 16;
+    if (x > right) break;
+    if (x < left) continue;
+
+    const h = 1.4 + rand01(i * 7 + 11) * 0.8;
+    const w = h * (charStandee.width / charStandee.height);
+    const y = track.heightAt(x);
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = 0.9;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.03, w * 0.42, 0.1, 0, 0, TAU);
+    ctx.fill();
+
+    ctx.drawImage(charStandee, -w / 2, -h, w, h);
+    ctx.restore();
+  }
+}
+
+// Deterministic pseudo-random in [0,1) so every client sees the same crowd.
+function rand01(n) {
+  const s = Math.sin(n * 12.9898 + state.seed * 0.0137) * 43758.5453;
+  return s - Math.floor(s);
+}
+
 function drawMarkers(track) {
   const first = Math.max(100, Math.floor((state.cam.x - 40) / 100) * 100);
   for (let x = first; x <= Math.min(track.finishX, state.cam.x + 60); x += 100) {
@@ -955,15 +1003,33 @@ function drawCar(entry, c) {
   ctx.fillStyle = 'rgba(210,240,255,0.85)';
   ctx.fill();
 
-  // driver
+  // driver — the uploaded character rides along in every car
+  const headX = -0.3;
+  const headY = -0.58;
+  const headR = 0.25;
+
   ctx.beginPath();
-  ctx.arc(-0.32, -0.52, 0.17, 0, TAU);
-  ctx.fillStyle = '#f2c9a0';
+  ctx.arc(headX, -0.34, 0.2, Math.PI, TAU);
+  ctx.fillStyle = shade(entry.color, 0.78);
   ctx.fill();
-  ctx.beginPath();
-  ctx.arc(-0.32, -0.58, 0.17, Math.PI, TAU);
-  ctx.fillStyle = shade(entry.color, 0.7);
-  ctx.fill();
+
+  if (imgReady(charFace)) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR, 0, TAU);
+    ctx.clip();
+    ctx.drawImage(charFace, headX - headR, headY - headR, headR * 2, headR * 2);
+    ctx.restore();
+  } else {
+    ctx.beginPath();
+    ctx.arc(headX, headY, 0.17, 0, TAU);
+    ctx.fillStyle = '#f2c9a0';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(headX, headY - 0.06, 0.17, Math.PI, TAU);
+    ctx.fillStyle = shade(entry.color, 0.7);
+    ctx.fill();
+  }
 
   // headlight
   ctx.beginPath();

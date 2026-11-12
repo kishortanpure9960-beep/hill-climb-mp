@@ -155,17 +155,26 @@ try {
     const c = document.getElementById('game');
     const g = c.getContext('2d');
     const px = (x, y) => Array.from(g.getImageData(Math.round(x), Math.round(y), 1, 1).data);
+    const all = g.getImageData(0, 0, c.width, c.height).data;
+    let gold = 0;
+    for (let i = 0; i < all.length; i += 16) {
+      if (all[i] > 185 && all[i + 1] > 145 && all[i + 2] < 120) gold++;
+    }
+    const mascot = document.querySelector('.mascot');
     return {
       sky: px(c.width * 0.15, c.height * 0.06),
       ground: px(c.width * 0.5, c.height * 0.9),
-      car: px(c.width * 0.5, c.height * 0.62)
+      car: px(c.width * 0.5, c.height * 0.62),
+      gold,
+      mascotLoaded: !!(mascot && mascot.complete && mascot.naturalWidth > 0)
     };
   })()`);
   const [sr, sg, sb] = pixels.sky;
   const [gr, gg, gb] = pixels.ground;
   const skyOk = sb > sr && sb > 100;
   const groundOk = gr > gb && gr > 40;
-  console.log('pixels:', { skyOk, groundOk, sky: pixels.sky, ground: pixels.ground });
+  const characterOk = pixels.mascotLoaded && pixels.gold > 20;
+  console.log('pixels:', { skyOk, groundOk, characterOk, gold: pixels.gold, mascotLoaded: pixels.mascotLoaded, sky: pixels.sky, ground: pixels.ground });
 
   await send('Input.dispatchKeyEvent', {
     type: 'keyUp',
@@ -185,6 +194,7 @@ try {
     meters > 25 &&
     skyOk &&
     groundOk &&
+    characterOk &&
     errors.length === 0;
   console.log(ok ? 'BROWSER OK' : 'BROWSER FAILED');
   process.exitCode = ok ? 0 : 1;

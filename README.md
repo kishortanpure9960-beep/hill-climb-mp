@@ -12,7 +12,8 @@ A 2&ndash;4 player hill-climb racer that runs in the browser. One shared, proced
 - **Arcade hill-climb handling** &mdash; gas/brake, air rotation, suspension, traction limits, auto flip recovery and checkpoints
 - **Live HUD** &mdash; race timer, distance, speed, positions and a minimap
 - **Touch controls** for phones, keyboard for desktop
-- Zero build step, no external assets, no frameworks
+- **Custom character art** &mdash; the uploaded avatar rides in every car and lines the track as roadside spectators (`public/assets/`)
+- No frameworks, no build step for local play
 
 ## Run it
 
@@ -51,6 +52,7 @@ server/index.js      HTTP static server + WebSocket rooms, 60 Hz authoritative s
 shared/track.js      seeded track generator (used by server and browser)
 shared/physics.js    car simulation (used by server and browser)
 public/              UI, canvas renderer, client-side prediction & interpolation
+public/assets/       character artwork (driver head + roadside standee)
 tools/               physics, network and headless-browser tests
 ```
 
