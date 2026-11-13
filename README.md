@@ -88,6 +88,7 @@ npm run test:browser   # headless Chrome drives the real UI and screenshots it
 The game is a long-running Node process with WebSockets, so it needs a host that keeps processes alive:
 
 - **Railway / Render / Fly.io** &mdash; deploy this repo, start command `npm start`, expose the port via `PORT`. A `Dockerfile` is included, so any container host works.
+- **VPS / Cloudways** &mdash; PM2 keeps the process alive and Nginx terminates TLS so the client can connect with `wss://`. Step-by-step in [`deploy/cloudways.md`](deploy/cloudways.md); `ecosystem.config.cjs` and `deploy/nginx.conf` are ready to copy.
 - **Vercel** &mdash; can host the static client, but *not* the WebSocket game server (serverless functions cannot hold socket connections). Point the client at a separate server if you split them.
 - **LAN / hotspot** &mdash; just `npm start` and share the Network URL, no deployment needed
 - **Quick public link** &mdash; run the server and tunnel it without an account:
