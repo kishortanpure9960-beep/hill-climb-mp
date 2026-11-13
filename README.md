@@ -53,13 +53,25 @@ server/index.js      HTTP static server + WebSocket rooms, 60 Hz authoritative s
 shared/track.js      seeded track generator (used by server and browser)
 shared/physics.js    car simulation (used by server and browser)
 public/              UI, canvas renderer, client-side prediction & interpolation
-public/assets/       character artwork (driver head + roadside standee)
+public/assets/       character artwork (driver head + roadside standee) and the car sprite
 tools/               physics, network and headless-browser tests
 ```
 
 - Server ticks physics at a fixed 60 Hz and broadcasts snapshots at 20 Hz.
 - Clients predict their own car locally and blend towards server snapshots; other cars are rendered ~110 ms in the past and interpolated.
 - Rooms live in memory. Restarting the server clears them.
+
+## Car model
+
+The car is your own Blender model (`hillclimb_car.blend`), rendered headless with an orthographic side camera on a transparent background and cropped to its alpha bounds:
+
+```bash
+blender -b hillclimb_car.blend --python tools/render-car.py
+```
+
+`public/assets/car_side.png` is that crop. `public/main.js` knows the model's world extents, so the sprite lands exactly on the physics footprint — wheel contact sits on the chassis centre + `0.78`, and the driver head is placed at the model's own head position.
+
+![Car](shots/car-preview.png)
 
 ## Tests
 

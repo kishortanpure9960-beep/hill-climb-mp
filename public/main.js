@@ -20,6 +20,14 @@ charStandee.src = '/assets/character_standee.png';
 const carSide = new Image();
 carSide.src = '/assets/car_side.png';
 
+// The driver's head, rendered from the model so the face photo from
+// driver_face_crop.png lands exactly where the UVs put it.
+const driverHead = new Image();
+driverHead.src = '/assets/driver_head.png';
+
+// Source box (pixels) around the face inside driver_head.png.
+const DRIVER_FACE = { sx: 0, sy: 64, sw: 282, sh: 281 };
+
 const CAR_SPRITE = {
   worldW: 3.5315, // model Y extent of the cropped render
   worldH: 2.0405, // model Z extent of the cropped render
@@ -958,13 +966,38 @@ function drawCar(entry, c) {
     drawCarVector(entry, wheelRot);
   }
 
-  // driver — the uploaded character rides along in every car
+  // driver — the uploaded face rides along in every car
   const sprite = imgReady(carSide);
   const headX = sprite ? CAR_SPRITE.head.y * CAR_SPRITE.scale : -0.34;
   const headY = sprite ? CAR_SPRITE.ground - CAR_SPRITE.head.z * CAR_SPRITE.scale : -0.8;
   const headR = 0.43;
 
-  if (imgReady(charFace)) {
+  if (imgReady(driverHead)) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR, 0, TAU);
+    ctx.fillStyle = '#1a1e26';
+    ctx.fill();
+    ctx.clip();
+    ctx.drawImage(
+      driverHead,
+      DRIVER_FACE.sx,
+      DRIVER_FACE.sy,
+      DRIVER_FACE.sw,
+      DRIVER_FACE.sh,
+      headX - headR,
+      headY - headR,
+      headR * 2,
+      headR * 2,
+    );
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR - 0.05, 0, TAU);
+    ctx.lineWidth = 0.1;
+    ctx.strokeStyle = '#e8b33c';
+    ctx.stroke();
+  } else if (imgReady(charFace)) {
     ctx.drawImage(charFace, headX - headR, headY - headR, headR * 2, headR * 2);
   } else {
     ctx.beginPath();
