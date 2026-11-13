@@ -209,6 +209,25 @@ try {
       }
     }
 
+    let bodyRed = 0;
+    if (car) {
+      const [ax, ay] = hc.w2s(car.x - 1.9, car.y - 1.3);
+      const [bx, by] = hc.w2s(car.x + 1.9, car.y + 0.9);
+      const x0 = Math.max(0, Math.round(ax * dpr));
+      const x1 = Math.min(c.width - 1, Math.round(bx * dpr));
+      const y0 = Math.max(0, Math.round(ay * dpr));
+      const y1 = Math.min(c.height - 1, Math.round(by * dpr));
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const i = (y * c.width + x) * 4;
+          const R = all[i];
+          const G = all[i + 1];
+          const B = all[i + 2];
+          if (R > 110 && R > G + 45 && R > B + 45) bodyRed++;
+        }
+      }
+    }
+
     const mascot = document.querySelector('.mascot');
     return {
       sky: px(c.width * 0.15, c.height * 0.06),
@@ -218,6 +237,7 @@ try {
       headGold,
       headDark,
       headPixels,
+      bodyRed,
       mascotLoaded: !!(mascot && mascot.complete && mascot.naturalWidth > 0)
     };
   })()`);
@@ -226,7 +246,8 @@ try {
   const skyOk = sb > sr && sb > 100;
   const groundOk = gr > gb && gr > 40;
   const characterOk = pixels.mascotLoaded && pixels.headGold > 20 && pixels.headDark > 30;
-  console.log('pixels:', { skyOk, groundOk, characterOk, head: pixels.head, headGold: pixels.headGold, headDark: pixels.headDark, mascotLoaded: pixels.mascotLoaded, sky: pixels.sky, ground: pixels.ground });
+  const carOk = pixels.bodyRed > 200;
+  console.log('pixels:', { skyOk, groundOk, characterOk, carOk, bodyRed: pixels.bodyRed, head: pixels.head, headGold: pixels.headGold, headDark: pixels.headDark, mascotLoaded: pixels.mascotLoaded, sky: pixels.sky, ground: pixels.ground });
 
   await send('Input.dispatchKeyEvent', {
     type: 'keyUp',
@@ -247,6 +268,7 @@ try {
     skyOk &&
     groundOk &&
     characterOk &&
+    carOk &&
     errors.length === 0;
   console.log(ok ? 'BROWSER OK' : 'BROWSER FAILED');
   process.exitCode = ok ? 0 : 1;

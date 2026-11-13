@@ -14,6 +14,20 @@ charFace.src = '/assets/character_face.png';
 const charStandee = new Image();
 charStandee.src = '/assets/character_standee.png';
 
+// Orthographic side render of the user's Blender car (hillclimb_car.blend),
+// cropped to its alpha bounds. The numbers below are the model's own world
+// extents, so the sprite can be placed exactly on the physics footprint.
+const carSide = new Image();
+carSide.src = '/assets/car_side.png';
+
+const CAR_SPRITE = {
+  worldW: 3.5315, // model Y extent of the cropped render
+  worldH: 2.0405, // model Z extent of the cropped render
+  scale: 0.9, // game units per model unit
+  ground: 0.78, // wheel contact sits this far below the chassis centre
+  head: { y: -0.23, z: 1.86 }, // driver head centre in model space
+};
+
 const imgReady = (img) => img.complete && img.naturalWidth > 0;
 
 const ui = {
@@ -932,12 +946,60 @@ function drawCar(entry, c) {
   ctx.globalAlpha = 0.22;
   ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(0, 0.7, 1.5, 0.32, angle * 0.4, 0, TAU);
+  ctx.ellipse(0, 0.72, 1.6, 0.33, angle * 0.4, 0, TAU);
   ctx.fill();
   ctx.restore();
 
   ctx.rotate(angle);
 
+  if (imgReady(carSide)) {
+    drawCarSprite(entry);
+  } else {
+    drawCarVector(entry, wheelRot);
+  }
+
+  // driver — the uploaded character rides along in every car
+  const sprite = imgReady(carSide);
+  const headX = sprite ? CAR_SPRITE.head.y * CAR_SPRITE.scale : -0.34;
+  const headY = sprite ? CAR_SPRITE.ground - CAR_SPRITE.head.z * CAR_SPRITE.scale : -0.8;
+  const headR = 0.43;
+
+  if (imgReady(charFace)) {
+    ctx.drawImage(charFace, headX - headR, headY - headR, headR * 2, headR * 2);
+  } else {
+    ctx.beginPath();
+    ctx.arc(headX, headY, 0.17, 0, TAU);
+    ctx.fillStyle = '#f2c9a0';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(headX, headY - 0.06, 0.17, Math.PI, TAU);
+    ctx.fillStyle = shade(entry.color, 0.7);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawCarSprite(entry) {
+  const w = CAR_SPRITE.worldW * CAR_SPRITE.scale;
+  const h = CAR_SPRITE.worldH * CAR_SPRITE.scale;
+  const bottom = CAR_SPRITE.ground;
+
+  // player-coloured aura keeps four identical-looking cars distinguishable
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = entry.color;
+  ctx.shadowColor = entry.color;
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.ellipse(0, bottom - 0.35, 1.45, 0.5, 0, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.drawImage(carSide, -w / 2, bottom - h, w, h);
+}
+
+function drawCarVector(entry, wheelRot) {
   // wheels
   for (const wx of [-1.2, 1.2]) {
     ctx.save();
@@ -1000,37 +1062,11 @@ function drawCar(entry, c) {
   ctx.fillStyle = 'rgba(210,240,255,0.85)';
   ctx.fill();
 
-  // driver — the uploaded character rides along in every car
-  const headX = -0.34;
-  const headY = -0.8;
-  const headR = 0.43;
-
-  // shoulders poking out of the cockpit
-  ctx.beginPath();
-  ctx.ellipse(headX + 0.02, -0.3, 0.26, 0.24, 0, 0, TAU);
-  ctx.fillStyle = shade(entry.color, 0.78);
-  ctx.fill();
-
-  if (imgReady(charFace)) {
-    ctx.drawImage(charFace, headX - headR, headY - headR, headR * 2, headR * 2);
-  } else {
-    ctx.beginPath();
-    ctx.arc(headX, headY, 0.17, 0, TAU);
-    ctx.fillStyle = '#f2c9a0';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(headX, headY - 0.06, 0.17, Math.PI, TAU);
-    ctx.fillStyle = shade(entry.color, 0.7);
-    ctx.fill();
-  }
-
   // headlight
   ctx.beginPath();
   ctx.arc(1.2, -0.02, 0.1, 0, TAU);
   ctx.fillStyle = '#fff3b0';
   ctx.fill();
-
-  ctx.restore();
 }
 
 function drawTag(entry, c) {
@@ -1152,4 +1188,11 @@ function renderMenuBackdrop(now) {
 requestAnimationFrame(frame);
 
 // Small hook so tools/browser-test.js can check what is drawn where.
-window.__hc = { state, w2s, headOffset: { x: -0.34, y: -0.8 } };
+window.__hc = {
+  state,
+  w2s,
+  headOffset: {
+    x: CAR_SPRITE.head.y * CAR_SPRITE.scale,
+    y: CAR_SPRITE.ground - CAR_SPRITE.head.z * CAR_SPRITE.scale,
+  },
+};

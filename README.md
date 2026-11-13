@@ -13,6 +13,7 @@ A 2&ndash;4 player hill-climb racer that runs in the browser. One shared, proced
 - **Live HUD** &mdash; race timer, distance, speed, positions and a minimap
 - **Touch controls** for phones, keyboard for desktop
 - **Custom character art** &mdash; the uploaded avatar rides in every car and lines the track as roadside spectators (`public/assets/`)
+- **Your own car model** &mdash; the car is an orthographic side render of `hillclimb_car.blend`, scaled onto the physics wheelbase
 - No frameworks, no build step for local play
 
 ## Run it
